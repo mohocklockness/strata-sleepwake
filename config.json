@@ -1,0 +1,255 @@
+{
+  "poll_interval_s": 5,
+  "idle_refresh_s": 1,
+  "idle_grace_s": 5,
+  "countdown_s": 30,
+  "idle_timeout_s": 600,
+  "final_idle_slack_s": 2.0,
+  "suspend_timeout_s": 150,
+  "suspend_resume_wait_s": 120,
+  "log_dir": "/tmp/opencode/sleepmgr",
+  "log_max_bytes": 10485760,
+  "log_backups": 5,
+  "pause": {
+    "state_file": "/tmp/opencode/sleepmgr/state.json",
+    "socket": "/tmp/opencode/sleepmgr/control.sock",
+    "inhibitor": true,
+    "timed_default_s": 3600,
+    "allow_uids": [
+      0,
+      1000
+    ],
+    "group": "sleepuser"
+  },
+  "service": {
+    "lock_file": "/tmp/opencode/sleepmgr/monitor.lock",
+    "status_file": "/tmp/opencode/sleepmgr/status.json",
+    "allow_unattended_suspend": false,
+    "stale_status_s": 15,
+    "gnome_check_s": 300
+  },
+  "gate": {
+    "enabled": false,
+    "socket": "/tmp/opencode/sleepmgr/gate.sock",
+    "port": 8080,
+    "allow_uid": 1000,
+    "token_file": "/tmp/opencode/sleepmgr/gate.token",
+    "timeout_s": 3,
+    "settle_s": 10.0,
+    "verify_s": 5.0,
+    "verify_probes": 3,
+    "lease_ttl_s": 900,
+    "startup_recovery_timeout_s": 180,
+    "startup_recovery_interval_s": 2
+  },
+  "strata": {
+    "enabled": true,
+    "config_path": "/srv/strata/Strata/strata-iq2_xs.json",
+    "server_cmdline_substrings": [
+      "Strata/serve/server.py"
+    ],
+    "engine_cmdline_substrings": [
+      "Strata/engine/strata"
+    ],
+    "gpu_util_threshold": 5,
+    "gpu_consecutive": 2,
+    "http_timeout_s": 3,
+    "status_failures_before_unknown": 2,
+    "unload_wait_s": 300,
+    "unload_verify_s": 90,
+    "recovery_timeout_s": 180,
+    "load_request_timeout_s": 120,
+    "load_retry_interval_s": 2,
+    "readiness_deadline_s": 300
+  },
+  "opencode": {
+    "enabled": true,
+    "db_path": "~/.local/share/opencode/opencode.db",
+    "processes": [
+      {
+        "name": "opencode-cli"
+      },
+      {
+        "name": "ai.opencode.desktop"
+      }
+    ],
+    "tool_processes": [
+      "bash",
+      "sh",
+      "dash",
+      "python3",
+      "node",
+      "npm",
+      "git",
+      "rg",
+      "fd",
+      "sed",
+      "awk",
+      "grep",
+      "make",
+      "cargo",
+      "go",
+      "pip",
+      "pip3",
+      "apt",
+      "apt-get",
+      "dpkg",
+      "curl",
+      "wget",
+      "ffmpeg",
+      "yt-dlp"
+    ],
+    "cpu_threshold_pct": 2.0,
+    "cpu_consecutive": 2,
+    "net_threshold_bytes_s": 20000,
+    "net_consecutive": 2,
+    "socket_activity_ms": 5000,
+    "active_window_s": 90,
+    "pending_window_s": 600
+  },
+  "updates": {
+    "processes": [
+      {
+        "name": "apt",
+        "args_any": []
+      },
+      {
+        "name": "apt-get",
+        "args_any": []
+      },
+      {
+        "name": "aptitude"
+      },
+      {
+        "name": "dpkg"
+      },
+      {
+        "name": "unattended-upgrade"
+      },
+      {
+        "name": "snap",
+        "args_any": [
+          "install",
+          "refresh",
+          "remove",
+          "revert",
+          "download",
+          "switch"
+        ]
+      },
+      {
+        "name": "pip",
+        "args_any": [
+          "install",
+          "uninstall",
+          "download"
+        ]
+      },
+      {
+        "name": "pip3",
+        "args_any": [
+          "install",
+          "uninstall",
+          "download"
+        ]
+      },
+      {
+        "name": "npm",
+        "args_any": [
+          "install",
+          "i",
+          "ci",
+          "update",
+          "uninstall"
+        ]
+      },
+      {
+        "name": "fwupdmgr",
+        "args_any": [
+          "update",
+          "install"
+        ]
+      },
+      {
+        "name": "ubuntu-drivers"
+      }
+    ],
+    "units": [
+      "apt-daily.service",
+      "apt-daily-upgrade.service",
+      "fwupd-refresh.service"
+    ],
+    "idle_units": [
+      "packagekit.service"
+    ]
+  },
+  "transfers": {
+    "processes": [
+      {
+        "name": "rsync"
+      },
+      {
+        "name": "scp"
+      },
+      {
+        "name": "sftp"
+      },
+      {
+        "name": "rclone"
+      },
+      {
+        "name": "lftp"
+      },
+      {
+        "name": "aria2c"
+      },
+      {
+        "name": "wget"
+      },
+      {
+        "name": "curl"
+      },
+      {
+        "name": "transmission-daemon"
+      },
+      {
+        "name": "transmission-gtk"
+      },
+      {
+        "name": "qbittorrent"
+      },
+      {
+        "name": "deluged"
+      },
+      {
+        "name": "nzbget"
+      },
+      {
+        "name": "yt-dlp"
+      }
+    ],
+    "net_ifaces": [
+      "eno1",
+      "wlp4s0"
+    ],
+    "net_mbps_threshold": 2.0,
+    "net_consecutive": 3,
+    "disk_write_mbps_threshold": 8.0,
+    "disk_devices": [
+      "sda",
+      "sdb",
+      "sdc",
+      "nvme0n1"
+    ],
+    "disk_consecutive": 3
+  },
+  "streams": {
+    "enabled": true,
+    "ports": [
+      47984,
+      47989,
+      48010
+    ],
+    "log_path": "~/.config/sunshine/sunshine.log"
+  }
+}

@@ -1,0 +1,3 @@
+#!/bin/sh
+# Launch the GTK control panel against the running monitor.
+exec /usr/bin/python3 /opt/sleepmgr/gui.py --config /etc/sleepmgr/config.json "$@"

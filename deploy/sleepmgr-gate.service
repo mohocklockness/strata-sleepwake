@@ -1,0 +1,65 @@
+[Unit]
+Description=Privileged inference-arrival gate helper for sleepmgr (review only, NOT installed)
+Documentation=file:/opt/sleepmgr/docs/inference-gate.md
+# Started independently of the monitor; the monitor connects over its socket.
+# The .socket unit creates the listener as root:sleepuser 0660, so the
+# helper never needs CAP_CHOWN and keeps NoNewPrivileges=yes.
+Requires=sleepmgr-gate.socket
+After=network.target sleepmgr-gate.socket
+Before=sleepmgr.service
+
+[Service]
+Type=simple
+# Root + CAP_NET_ADMIN only.  The helper exists so sleepmgr.service itself can
+# stay unprivileged with NoNewPrivileges=yes: it owns exactly one nftables table
+# and nothing else.
+User=root
+Group=root
+# Rule: SYN-only, scoped to iifname != "lo" (remote arrivals), immediate TCP
+# reset.  No meta skuid: it matched 0 packets in the input hook (a silent
+# no-op).  Loopback stays open so the monitor's local /status checks work.
+ExecStart=/usr/bin/python3 /opt/sleepmgr/nftgate_helper.py \
+    --socket /run/sleepmgr-gate/gate.sock \
+    --table sleepmgr_gate \
+    --port 8080 \
+    --allow-uid 1000 \
+    --group sleepuser \
+    --action reject \
+    --token-file /etc/sleepmgr/gate.token --require-token \
+    --sealed-state /var/lib/sleepmgr-gate/sealed.json \
+    --lease-ttl-s 900
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=10
+# Do NOT force-delete the table in ExecStopPost.  A controlled-suspend seal must
+# survive service stop, helper crash and restart.  The durable boot-scoped seal
+# marker lives in /var/lib/sleepmgr-gate, not /run, so RuntimeDirectory cleanup
+# cannot remove it.
+
+# Narrow privilege, hard sandbox.
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CapabilityBoundingSet=CAP_NET_ADMIN
+AmbientCapabilities=CAP_NET_ADMIN
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+# Persistent, systemd-managed state for the boot-scoped seal marker.  This is
+# writable even with ProtectSystem=strict and survives service stop/restart and
+# RuntimeDirectory cleanup.  A reboot changes the boot id: the marker then means
+# the previous boot ended inside a seal, so startup re-seals (fail closed)
+# instead of discarding it, and sleepmgr-gate-boot.service applies the rule
+# before network-pre.target in case the helper has not started yet.
+StateDirectory=sleepmgr-gate
+StateDirectoryMode=0750
+ReadWritePaths=/var/lib/sleepmgr-gate
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+# AF_UNIX for our control socket, AF_NETLINK for nft.
+RestrictAddressFamilies=AF_UNIX AF_NETLINK
+# The socket unit owns /run/sleepmgr-gate and the listener; the service only
+# inherits the listening fd.  Do not add a RuntimeDirectory here: it would
+# remove the directory out from under the socket unit on helper restart.
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+[Unit]
+Description=Post-resume Strata/wake health check for the sleep monitor (optional)
+# Optional companion unit.  The monitor already reloads Strata on the inline
+# resume path after its own suspend; this unit exists for suspends triggered by
+# something else (GNOME menu, logind).  It is NOT enabled by install.sh.
+After=suspend.target
+Wants=suspend.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/sleepmgr/sleepmon.py --config /etc/sleepmgr/config.json --resume-check
+
+[Install]
+WantedBy=suspend.target

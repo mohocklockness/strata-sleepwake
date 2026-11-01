@@ -1,0 +1,49 @@
+[Unit]
+Description=Strata/NVIDIA fail-closed sleep guard (review only, NOT installed)
+Documentation=file:/opt/sleepmgr/suspendguard.py
+# Start with the normal multi-user boot, after logind (which is required to
+# create an inhibitor), but deliberately do NOT wait for network-online.target:
+# the inhibitor must be held even when the network is degraded or absent.
+DefaultDependencies=yes
+Wants=systemd-logind.service
+After=systemd-logind.service dbus.socket
+Before=sleepmgr.service sleep.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=notify
+NotifyAccess=main
+# The guard holds a logind sleep-block lock.  It is unprivileged; peer uid +
+# optional token authorise release.
+User=sleepuser
+Group=sleepuser
+ExecStart=/usr/bin/python3 /opt/sleepmgr/suspendguard.py --config /etc/sleepmgr/config.json
+Restart=always
+# Minimise the unprotected gap if the process dies.  It is still a gap; a
+# restart is not a fail-safe event and is reported by the status file.
+RestartSec=250ms
+TimeoutStartSec=30
+TimeoutStopSec=5
+WatchdogSec=20
+UMask=0077
+
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+ProtectKernelLogs=yes
+ProtectClock=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+# D-Bus/systemd-inhibit, Strata HTTP on localhost, and nvidia-smi.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+RuntimeDirectory=sleepmgr-suspend-guard
+RuntimeDirectoryMode=0750
+RuntimeDirectoryPreserve=yes
+
+[Install]
+WantedBy=multi-user.target

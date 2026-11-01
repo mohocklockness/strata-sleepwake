@@ -1,0 +1,42 @@
+[Unit]
+Description=Fail-closed sleepmgr inference gate after an interrupted sealed recovery
+Documentation=file:/opt/sleepmgr/docs/deploy-selective.md
+# Mirror nftables.service: run in the firewall phase, before the network is
+# usable, so a previous boot that ended inside a controlled-suspend seal cannot
+# admit remote inference during the gap before the socket-activated helper
+# starts.  The privilege model matches the helper: root + CAP_NET_ADMIN only.
+#
+# This unit is deliberately NOT condition-skipped on a clean boot.  It always
+# runs and exits 0 when there is no seal marker, so a `Requires=` from
+# deploy/strata.service.d/10-sleepmgr-gate-boot.conf means "Strata may start
+# only after this unit *succeeded*".  A genuinely failed seal (missing tool,
+# generator/nft error, unverifiable table) fails the unit, which then also
+# stops Strata from accepting remote inference.  Only the configured inference
+# port is gated; a failure leaves host networking (SSH, etc.) up for
+# troubleshooting.
+DefaultDependencies=no
+Wants=network-pre.target
+Before=network-pre.target shutdown.target
+Conflicts=shutdown.target
+# The durable seal marker lives on /var, so the local filesystem must be
+# mounted before this runs.
+After=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/sleepmgr-gate-boot
+CapabilityBoundingSet=CAP_NET_ADMIN
+AmbientCapabilities=CAP_NET_ADMIN
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+# AF_UNIX and AF_NETLINK are what nft needs.  The script only reads the seal
+# marker and applies the one owned table; it writes nothing outside its tmpfile.
+RestrictAddressFamilies=AF_UNIX AF_NETLINK
+
+[Install]
+WantedBy=sysinit.target

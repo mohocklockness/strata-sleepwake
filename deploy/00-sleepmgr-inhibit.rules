@@ -1,0 +1,13 @@
+// sleepmgr runs as sleepuser in system.slice, outside any logind session.
+// polkit's implicit result for inhibit-block-sleep is "no" for such processes,
+// so systemd-inhibit exits immediately and Pause cannot hold its block lock.
+//
+// Scope this to the approved requesting user.  A subject.system_unit check was
+// attempted, but a diagnostic showed polkit reports system_unit=null for this
+// service's call, so the unit name cannot be matched here.
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.login1.inhibit-block-sleep" &&
+        subject.user == "sleepuser") {
+        return polkit.Result.YES;
+    }
+});

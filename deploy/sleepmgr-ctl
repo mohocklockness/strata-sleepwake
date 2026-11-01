@@ -1,0 +1,3 @@
+#!/bin/sh
+# Terminal control for the sleep monitor.
+exec /usr/bin/python3 /opt/sleepmgr/sleepmgr_ctl.py --config /etc/sleepmgr/config.json "$@"

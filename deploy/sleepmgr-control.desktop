@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Sleep Control
+GenericName=Suspend Control
+Comment=Pause, resume or intentionally suspend the workload-aware sleep monitor
+Exec=/usr/local/bin/sleepmgr-gui
+Icon=system-suspend
+Terminal=false
+Categories=Utility;
+Keywords=sleep;suspend;pause;strata;

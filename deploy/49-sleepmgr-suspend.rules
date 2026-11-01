@@ -1,0 +1,22 @@
+// Allow one narrow, non-interactive suspend path for the sleep monitor.
+//
+// The service runs as sleepuser but outside any logind session, so logind's
+// normal "active local session" rule does not apply and systemctl suspend gets
+// auth_admin_keep.  This rule grants only org.freedesktop.login1.suspend to a
+// sessionless sleepuser process; interactive sleepuser sessions still have
+// a session and remain governed by the normal allow_active policy.
+//
+// polkit 124 on Ubuntu 24.04 reports subject.system_unit=null for this service
+// (verified during the existing inhibit-block-sleep rule work), so the stable
+// user + no-session pair is used instead of a unit match.  This is deliberately
+// narrower than allowing all sleepuser processes.
+//
+// It does not grant power-off, reboot, hibernate or inhibit-block-sleep, and it
+// does not disable polkit globally.  Deploy only with separate approval.
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.login1.suspend" &&
+        subject.user == "sleepuser" &&
+        !subject.session) {
+        return polkit.Result.YES;
+    }
+});

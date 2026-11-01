@@ -1,0 +1,52 @@
+[Unit]
+Description=Workload-aware sleep monitor (dry-run by default)
+Documentation=file:/opt/sleepmgr/README.md
+# Network is only used to read Strata/status; the unit works offline.
+After=network-online.target
+Wants=network-online.target
+# The gate socket is optional (installed only with install.sh --with-gate).
+# Pulling the socket into the boot transaction gives the monitor a listener
+# before its preflight/startup recovery; a missing unit is ignored by systemd.
+# The helper still starts on demand and owns no connection until then.
+Wants=sleepmgr-gate.socket
+After=sleepmgr-gate.socket
+
+[Service]
+Type=simple
+# --service = non-interactive.  No --arm: the shipped unit is DRY-RUN.
+# Arming later requires service.allow_unattended_suspend=true AND --arm.
+ExecStart=/usr/bin/python3 /opt/sleepmgr/sleepmon.py --config /etc/sleepmgr/config.json --service
+Restart=on-failure
+RestartSec=5
+StartLimitBurst=5
+TimeoutStopSec=20
+
+User=sleepuser
+Group=sleepuser
+# The GNOME session bus only serves its owning uid: a uid-0 process completes
+# the D-Bus handshake but the connection is then closed, so Mutter idle cannot
+# be read as root.  As sleepuser the monitor queries Mutter directly and
+# still owns the Strata key and the OpenCode DB (both 0600, sleepuser).
+# A future nft inference-arrival gate needs CAP_NET_ADMIN and must therefore be
+# a separate, narrowly-scoped privileged helper, not this service.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+RuntimeDirectory=sleepmgr
+RuntimeDirectoryMode=0755
+# Keep /run/sleepmgr after the service stops.  The supervised --arm-once
+# process runs as sleepuser and must acquire the *same* monitor.lock; without
+# this, systemd's default RuntimeDirectoryPreserve=no deletes the directory and
+# the user cannot recreate it under root-owned /run.
+RuntimeDirectoryPreserve=yes
+StateDirectory=sleepmgr
+StateDirectoryMode=0750
+LogsDirectory=sleepmgr
+LogsDirectoryMode=0750
+
+[Install]
+WantedBy=multi-user.target

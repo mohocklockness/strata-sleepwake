@@ -1,0 +1,24 @@
+[Unit]
+Description=Sleepmgr inference gate control socket
+Documentation=file:/opt/sleepmgr/docs/inference-gate.md
+# The helper owns the gate; the socket owns only the listener.  Stop the
+# socket when the helper stops so a stale listener cannot queue requests.
+PartOf=sleepmgr-gate.service
+Before=sleepmgr-gate.service
+
+[Socket]
+ListenStream=/run/sleepmgr-gate/gate.sock
+# The durable seal marker is deliberately NOT in this runtime directory.  It
+# lives in StateDirectory=/var/lib/sleepmgr-gate on the service, so stopping the
+# socket/helper (or RuntimeDirectory cleanup) cannot delete the seal.
+Service=sleepmgr-gate.service
+# Created by systemd as root:sleepuser 0660.  This is why the helper does
+# not need CAP_CHOWN; it only inherits the listening fd (LISTEN_FDS).
+SocketUser=root
+SocketGroup=sleepuser
+SocketMode=0660
+DirectoryMode=0755
+RemoveOnStop=yes
+
+[Install]
+WantedBy=sockets.target
